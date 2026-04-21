@@ -1,0 +1,332 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#060814" />
+    <title>Typing Speed Battle by Bhavy and Group</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800&family=JetBrains+Mono:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <canvas id="fxCanvas" aria-hidden="true"></canvas>
+
+    <div class="app">
+      <header class="topbar">
+        <div class="brand">
+          <div class="brand__badge" aria-hidden="true">TSB</div>
+          <div class="brand__text">
+            <div class="brand__title">Typing Speed Battle</div>
+            <div class="brand__subtitle">by TriDev(Bhavya,Rushil,Mann)</div>
+          </div>
+        </div>
+
+        <div class="topbar__right">
+          <div class="pill" title="Current mode">
+            <span class="pill__label">Mode</span>
+            <span class="pill__value" id="modeLabel">Home</span>
+          </div>
+          <button class="btn btn--ghost" id="btnOpenLeaderboard" type="button">
+            Leaderboard
+          </button>
+        </div>
+      </header>
+
+      <!-- HOME -->
+      <main class="screen screen--active" id="screenHome" data-screen="home">
+        <section class="hero">
+          <div class="hero__glow" aria-hidden="true"></div>
+          <h1 class="hero__title">Typing Speed Battle by TriDev(Bhavya,Rushil,Mann) </h1>
+          <p class="hero__desc">
+            Neon-fueled typing duels. Race an AI opponent, master accuracy, and climb the
+            leaderboard.
+          </p>
+          <div class="hero__actions">
+            <button class="btn btn--primary" id="btnStartFromHome" type="button">
+              Start Game
+            </button>
+            <button class="btn btn--secondary" id="btnHowTo" type="button">
+              How it works
+            </button>
+          </div>
+
+          <div class="howto" id="howto" hidden>
+            <div class="howto__grid">
+              <div class="card">
+                <div class="card__title">Real-time feedback</div>
+                <div class="card__body">
+                  Correct letters glow green; गलत letters glow red. Current character has an
+                  animated cursor.
+                </div>
+              </div>
+              <div class="card">
+                <div class="card__title">Accuracy (DP)</div>
+                <div class="card__body">
+                  Accuracy is computed via <b>LCS Dynamic Programming</b> (Longest Common
+                  Subsequence) between target and typed text.
+                </div>
+              </div>
+              <div class="card">
+                <div class="card__title">WPM (Sliding window)</div>
+                <div class="card__body">
+                  WPM updates continuously using a <b>sliding 10s window</b> of keystroke
+                  timestamps.
+                </div>
+              </div>
+              <div class="card">
+                <div class="card__title">Battle AI</div>
+                <div class="card__body">
+                  Toggle AI to race side-by-side with realistic pauses, variable speed, and
+                  occasional mistakes.
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <!-- GAME -->
+      <main class="screen" id="screenGame" data-screen="game">
+        <section class="grid">
+          <!-- LEFT: typing -->
+          <div class="panel panel--main">
+            <div class="panel__header">
+              <div class="panel__title">
+                <span class="dot dot--cyan" aria-hidden="true"></span>
+                Arena
+              </div>
+              <div class="panel__meta">
+                <div class="chip" id="difficultyChip">Difficulty: Medium</div>
+                <div class="chip" id="timeChip">Time: 60s</div>
+              </div>
+            </div>
+
+            <div class="countdown" id="countdown" hidden>
+              <div class="countdown__ring" aria-hidden="true"></div>
+              <div class="countdown__num" id="countdownNum">3</div>
+              <div class="countdown__label">Race starts in</div>
+            </div>
+
+            <div class="progressWrap">
+              <div class="progressRow">
+                <div class="progressRow__label">You</div>
+                <div class="progressBar">
+                  <div class="progressBar__fill progressBar__fill--you" id="userProgress"></div>
+                </div>
+                <div class="progressRow__pct" id="userPct">0%</div>
+              </div>
+              <div class="progressRow">
+                <div class="progressRow__label">
+                  AI <span class="aiTag" id="aiTag">OFF</span>
+                </div>
+                <div class="progressBar">
+                  <div class="progressBar__fill progressBar__fill--ai" id="aiProgress"></div>
+                </div>
+                <div class="progressRow__pct" id="aiPct">0%</div>
+              </div>
+            </div>
+
+            <div class="typingText" id="targetText" aria-label="Target text"></div>
+
+            <div class="inputWrap">
+              <div class="inputLabel">
+                <span class="dot dot--magenta" aria-hidden="true"></span>
+                Type here
+              </div>
+              <textarea
+                id="typingInput"
+                class="typingInput"
+                rows="3"
+                spellcheck="false"
+                autocomplete="off"
+                autocapitalize="off"
+                placeholder="Press Start, then type..."
+              ></textarea>
+              <div class="hintRow">
+                <div class="hint">
+                  Tip: use <kbd>Esc</kbd> to pause/resume. <kbd>Ctrl</kbd> + <kbd>R</kbd> resets
+                  in-game.
+                </div>
+                <div class="hint hint--mono" id="liveHint">Ready.</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- RIGHT: control + stats -->
+          <aside class="side">
+            <div class="panel">
+              <div class="panel__header">
+                <div class="panel__title">
+                  <span class="dot dot--green" aria-hidden="true"></span>
+                  Control Panel
+                </div>
+              </div>
+
+              <div class="controls">
+                <div class="btnRow">
+                  <button class="btn btn--primary" id="btnStart" type="button">Start</button>
+                  <button class="btn btn--ghost" id="btnPause" type="button">Pause</button>
+                  <button class="btn btn--danger" id="btnReset" type="button">Reset</button>
+                </div>
+
+                <div class="fieldset">
+                  <div class="fieldset__label">Difficulty</div>
+                  <div class="seg" role="group" aria-label="Difficulty">
+                    <button class="seg__btn" data-difficulty="easy" type="button">Easy</button>
+                    <button class="seg__btn seg__btn--active" data-difficulty="medium" type="button">
+                      Medium
+                    </button>
+                    <button class="seg__btn" data-difficulty="hard" type="button">Hard</button>
+                  </div>
+                </div>
+
+                <div class="fieldset">
+                  <div class="fieldset__label">Time</div>
+                  <div class="seg" role="group" aria-label="Time">
+                    <button class="seg__btn" data-time="30" type="button">30s</button>
+                    <button class="seg__btn seg__btn--active" data-time="60" type="button">60s</button>
+                    <button class="seg__btn" data-time="120" type="button">120s</button>
+                  </div>
+                </div>
+
+                <div class="fieldset">
+                  <div class="toggleRow">
+                    <div>
+                      <div class="fieldset__label">AI Opponent</div>
+                      <div class="muted">Race mode: AI types alongside you.</div>
+                    </div>
+                    <label class="switch" aria-label="AI Opponent toggle">
+                      <input id="toggleAI" type="checkbox" />
+                      <span class="switch__track"></span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="panel">
+              <div class="panel__header">
+                <div class="panel__title">
+                  <span class="dot dot--yellow" aria-hidden="true"></span>
+                  Stats Panel
+                </div>
+              </div>
+
+              <div class="stats">
+                <div class="stat">
+                  <div class="stat__k">WPM</div>
+                  <div class="stat__v" id="statWpm">0</div>
+                </div>
+                <div class="stat">
+                  <div class="stat__k">Accuracy</div>
+                  <div class="stat__v" id="statAcc">100%</div>
+                </div>
+                <div class="stat">
+                  <div class="stat__k">Errors</div>
+                  <div class="stat__v" id="statErr">0</div>
+                </div>
+                <div class="stat stat--timer">
+                  <div class="stat__k">Timer</div>
+                  <div class="stat__v" id="statTime">60.0s</div>
+                </div>
+              </div>
+
+              <div class="mini">
+                <div class="mini__row">
+                  <div class="mini__k">Typed chars</div>
+                  <div class="mini__v" id="statChars">0</div>
+                </div>
+                <div class="mini__row">
+                  <div class="mini__k">Correct chars</div>
+                  <div class="mini__v" id="statCorrect">0</div>
+                </div>
+                <div class="mini__row">
+                  <div class="mini__k">AI WPM</div>
+                  <div class="mini__v" id="statAiWpm">—</div>
+                </div>
+              </div>
+            </div>
+          </aside>
+        </section>
+      </main>
+
+      <!-- END -->
+      <main class="screen" id="screenEnd" data-screen="end">
+        <section class="end">
+          <div class="end__card">
+            <div class="end__title">Match Complete</div>
+            <div class="end__sub" id="endSub">Your results are locked in.</div>
+            <div class="end__grid">
+              <div class="endStat">
+                <div class="endStat__k">WPM</div>
+                <div class="endStat__v" id="endWpm">0</div>
+              </div>
+              <div class="endStat">
+                <div class="endStat__k">Accuracy</div>
+                <div class="endStat__v" id="endAcc">0%</div>
+              </div>
+              <div class="endStat">
+                <div class="endStat__k">Errors</div>
+                <div class="endStat__v" id="endErr">0</div>
+              </div>
+              <div class="endStat">
+                <div class="endStat__k">Time</div>
+                <div class="endStat__v" id="endTime">0s</div>
+              </div>
+            </div>
+
+            <div class="end__actions">
+              <button class="btn btn--primary" id="btnPlayAgain" type="button">Play Again</button>
+              <button class="btn btn--ghost" id="btnBackHome" type="button">Back Home</button>
+            </div>
+
+            <div class="end__footer">
+              <div class="nameRow">
+                <label class="nameRow__label" for="playerName">Name</label>
+                <input id="playerName" class="nameRow__input" placeholder="Enter name for leaderboard" maxlength="18" />
+                <button id="btnSaveScore" class="btn btn--secondary" type="button">
+                  Save Score
+                </button>
+              </div>
+              <div class="muted small">
+                Scores are saved locally in your browser (no backend).
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <!-- LEADERBOARD MODAL -->
+      <div class="modal" id="modalLeaderboard" hidden>
+        <div class="modal__backdrop" data-close="true"></div>
+        <div class="modal__dialog" role="dialog" aria-modal="true" aria-label="Leaderboard">
+          <div class="modal__head">
+            <div class="modal__title">Leaderboard</div>
+            <button class="btn btn--ghost btn--sm" id="btnCloseLeaderboard" type="button">
+              Close
+            </button>
+          </div>
+          <div class="modal__body">
+            <div class="lbMeta">
+              <div class="chip">Ranked by WPM (max-heap)</div>
+              <button class="btn btn--danger btn--sm" id="btnClearLeaderboard" type="button">
+                Clear
+              </button>
+            </div>
+            <div class="leaderboard" id="leaderboardList"></div>
+            <div class="muted small">
+              Tip: Save a score from the end screen to appear here.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
